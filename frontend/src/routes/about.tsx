@@ -99,10 +99,10 @@ function AboutPage() {
             </p>
             <h2 className="mt-2 font-display text-2xl font-bold">Sources, years, and limits</h2>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
-              This educational prototype uses illustrative data and public-health framing to explain
-              how real-world health indicators are interpreted. The platform emphasizes that
-              reference years, units, and source methods matter when comparing countries or
-              measures.
+              Initial numerical examples are synthetic teaching values, while administrators can add
+              observations and record source references. The platform emphasizes that reference
+              years, units, and source methods matter when comparing countries or measures; this
+              prototype does not independently verify administrator-entered data.
             </p>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
               Not all indicators are available for every country or in every year. Missing data is

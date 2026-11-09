@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, BarChart3 } from "lucide-react";
 import { useMemo } from "react";
 import {
@@ -17,17 +17,18 @@ import { countries, getCountry, getIndicatorTopic, healthRecords, topics } from 
 const sampleYears = [2000, 2008, 2016, 2023];
 
 export const Route = createFileRoute("/countries/$countryId")({
-  loader: ({ params }) => {
-    const country = getCountry(params.countryId);
-    if (!country) throw notFound();
-    return { country };
-  },
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: [
-      { title: `${loaderData.country.name} | Global Health Explorer` },
-      { name: "description", content: loaderData.country.intro },
-      { property: "og:title", content: `${loaderData.country.name} | Global Health Explorer` },
-      { property: "og:description", content: loaderData.country.intro },
+      { title: "Country Profile | Global Health Explorer" },
+      {
+        name: "description",
+        content: "Explore a country's health profile and available indicators.",
+      },
+      { property: "og:title", content: "Country Profile | Global Health Explorer" },
+      {
+        property: "og:description",
+        content: "Explore a country's health profile and available indicators.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -36,11 +37,12 @@ export const Route = createFileRoute("/countries/$countryId")({
 });
 
 function CountryProfilePage() {
-  const { country } = Route.useLoaderData();
+  const { countryId } = Route.useParams();
+  const country = getCountry(countryId);
 
   const countryRecords = useMemo(
-    () => healthRecords.filter((record) => record.countryId === country.id),
-    [country.id],
+    () => (country ? healthRecords.filter((record) => record.countryId === country.id) : []),
+    [country],
   );
 
   const indicatorSummaries = useMemo(() => {
@@ -65,6 +67,7 @@ function CountryProfilePage() {
           description: indicator?.description ?? "",
           value: latest?.value ?? null,
           year: latest?.year ?? null,
+          source: latest?.source ?? null,
           records: [...records].sort((a, b) => a.year - b.year),
           topic: getIndicatorTopic(indicatorId),
         };
@@ -73,9 +76,12 @@ function CountryProfilePage() {
   }, [countryRecords]);
 
   const primary = indicatorSummaries[0];
+  const profileYears = Array.from(
+    new Set([...sampleYears, ...countryRecords.map((record) => record.year)]),
+  ).sort((left, right) => left - right);
   const chartData = useMemo(
     () =>
-      sampleYears.map((year) => {
+      profileYears.map((year) => {
         const row: Record<string, string | number | null> = { year };
         for (const item of indicatorSummaries.slice(0, 4)) {
           const found = item.records.find((record) => record.year === year);
@@ -83,8 +89,21 @@ function CountryProfilePage() {
         }
         return row;
       }),
-    [indicatorSummaries],
+    [indicatorSummaries, profileYears],
   );
+
+  if (!country || country.active === false) {
+    return (
+      <PublicLayout>
+        <main className="page-wrap py-16">
+          <h1 className="font-display text-3xl font-bold">Country profile unavailable</h1>
+          <p className="mt-3 text-muted-foreground">
+            This country may be inactive or not yet available in this browser.
+          </p>
+        </main>
+      </PublicLayout>
+    );
+  }
 
   return (
     <PublicLayout>
@@ -132,48 +151,55 @@ function CountryProfilePage() {
                 Sample values
               </span>
             </div>
-            <div className="mt-6 h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
-                  <CartesianGrid
-                    strokeDasharray="3 4"
-                    stroke="var(--color-border)"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="year"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 8,
-                      borderColor: "var(--color-border)",
-                      background: "var(--color-card)",
-                      color: "var(--color-foreground)",
-                    }}
-                    formatter={(value) => [
-                      `${value} ${primary?.unit ?? ""}`,
-                      primary?.name ?? "Value",
-                    ]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={primary?.indicatorId ?? "value"}
-                    stroke="var(--color-chart-1)"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    connectNulls={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {indicatorSummaries.length ? (
+              <div className="mt-6 h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
+                    <CartesianGrid
+                      strokeDasharray="3 4"
+                      stroke="var(--color-border)"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="year"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: 8,
+                        borderColor: "var(--color-border)",
+                        background: "var(--color-card)",
+                        color: "var(--color-foreground)",
+                      }}
+                      formatter={(value) => [
+                        `${value} ${primary?.unit ?? ""}`,
+                        primary?.name ?? "Value",
+                      ]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey={primary?.indicatorId ?? "value"}
+                      stroke="var(--color-chart-1)"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      connectNulls={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="mt-6 rounded-lg bg-wash p-5 text-sm leading-6 text-muted-foreground">
+                No sample health observations are currently available for this country. Its profile
+                and indicator concepts are still available to explore.
+              </p>
+            )}
           </div>
 
           <aside className="space-y-4">
@@ -195,6 +221,7 @@ function CountryProfilePage() {
                     {item.year && (
                       <p className="mt-1 text-xs text-muted-foreground">
                         Reference year: {item.year}
+                        {item.source ? ` · Source: ${item.source}` : ""}
                       </p>
                     )}
                   </div>
@@ -205,9 +232,9 @@ function CountryProfilePage() {
             <div className="rounded-xl bg-wash p-5">
               <p className="text-xs font-bold uppercase tracking-wider text-primary">Data note</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                This profile uses illustrative example values for educational comparison only.
-                Values are not official public-health statistics and should be read as a teaching
-                aid.
+                Initial examples are synthetic teaching values, while administrators may add other
+                observations and source references. Check each observation's source and year;
+                imported information is not independently verified by this prototype.
               </p>
             </div>
           </aside>
@@ -249,16 +276,19 @@ function CountryProfilePage() {
         <section className="mt-12 rounded-xl border border-border bg-card p-6">
           <p className="text-xs font-bold uppercase tracking-wider text-primary">Related topics</p>
           <div className="mt-4 flex flex-wrap gap-3">
-            {topics.slice(1, 5).map((topic) => (
-              <Link
-                key={topic.slug}
-                to="/topics/$slug"
-                params={{ slug: topic.slug }}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground"
-              >
-                {topic.title} <ArrowRight size={14} />
-              </Link>
-            ))}
+            {topics
+              .filter((topic) => topic.active !== false)
+              .slice(1, 5)
+              .map((topic) => (
+                <Link
+                  key={topic.slug}
+                  to="/topics/$slug"
+                  params={{ slug: topic.slug }}
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground"
+                >
+                  {topic.title} <ArrowRight size={14} />
+                </Link>
+              ))}
           </div>
         </section>
       </main>

@@ -39,7 +39,11 @@ function Index() {
     if (!query) return [];
     return [
       ...topics
-        .filter((topic) => `${topic.title} ${topic.shortDescription}`.toLowerCase().includes(query))
+        .filter(
+          (topic) =>
+            topic.active !== false &&
+            `${topic.title} ${topic.shortDescription}`.toLowerCase().includes(query),
+        )
         .slice(0, 4)
         .map((topic) => ({
           label: topic.title,
@@ -48,7 +52,7 @@ function Index() {
           type: "topic" as const,
         })),
       ...countries
-        .filter((country) => country.name.toLowerCase().includes(query))
+        .filter((country) => country.active !== false && country.name.toLowerCase().includes(query))
         .slice(0, 4)
         .map((country) => ({
           label: `${country.flag} ${country.name}`,
@@ -58,8 +62,10 @@ function Index() {
         })),
     ].slice(0, 6);
   }, [search]);
-  const globalTopic = topics[0];
-  const featuredTopics = topics.slice(1, 5);
+  const featuredTopics = topics.filter((topic) => topic.active !== false).slice(1, 5);
+  const trendTopic = topics.find(
+    (topic) => topic.slug === "life-expectancy" && topic.active !== false,
+  );
 
   return (
     <PublicLayout>
@@ -234,46 +240,48 @@ function Index() {
             </Button>
           </div>
           <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {topics.map((topic, index) => (
-              <TopicLink key={topic.slug} slug={topic.slug}>
-                <div
-                  className={`group flex h-full min-h-[190px] flex-col rounded-xl border border-border bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md ${index === 0 ? "sm:col-span-2 lg:col-span-2" : ""}`}
-                >
-                  <span
-                    className={`flex size-10 items-center justify-center rounded-full ${topic.color === "leaf" ? "bg-leaf text-leaf-foreground" : topic.color === "coral" ? "bg-coral text-coral-foreground" : "bg-sea text-sea-foreground"}`}
+            {topics
+              .filter((topic) => topic.active !== false)
+              .map((topic, index) => (
+                <TopicLink key={topic.slug} slug={topic.slug}>
+                  <div
+                    className={`group flex h-full min-h-[190px] flex-col rounded-xl border border-border bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md ${index === 0 ? "sm:col-span-2 lg:col-span-2" : ""}`}
                   >
-                    <span className="text-lg" aria-hidden>
-                      {topic.icon === "globe"
-                        ? "◎"
-                        : topic.icon === "heart"
-                          ? "♡"
-                          : topic.icon === "baby"
-                            ? "✳"
-                            : topic.icon === "chart"
-                              ? "↗"
-                              : topic.icon === "mind"
-                                ? "◉"
-                                : topic.icon === "ribbon"
-                                  ? "⌁"
-                                  : topic.icon === "care"
-                                    ? "✣"
-                                    : topic.icon === "air"
-                                      ? "〰"
-                                      : "◇"}
+                    <span
+                      className={`flex size-10 items-center justify-center rounded-full ${topic.color === "leaf" ? "bg-leaf text-leaf-foreground" : topic.color === "coral" ? "bg-coral text-coral-foreground" : "bg-sea text-sea-foreground"}`}
+                    >
+                      <span className="text-lg" aria-hidden>
+                        {topic.icon === "globe"
+                          ? "◎"
+                          : topic.icon === "heart"
+                            ? "♡"
+                            : topic.icon === "baby"
+                              ? "✳"
+                              : topic.icon === "chart"
+                                ? "↗"
+                                : topic.icon === "mind"
+                                  ? "◉"
+                                  : topic.icon === "ribbon"
+                                    ? "⌁"
+                                    : topic.icon === "care"
+                                      ? "✣"
+                                      : topic.icon === "air"
+                                        ? "〰"
+                                        : "◇"}
+                      </span>
                     </span>
-                  </span>
-                  <h3 className="mt-4 font-display text-lg font-bold group-hover:text-primary">
-                    {topic.title}
-                  </h3>
-                  <p className="mt-1 flex-1 text-sm leading-6 text-muted-foreground">
-                    {topic.shortDescription}
-                  </p>
-                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                    Explore topic <ArrowRight size={13} />
-                  </span>
-                </div>
-              </TopicLink>
-            ))}
+                    <h3 className="mt-4 font-display text-lg font-bold group-hover:text-primary">
+                      {topic.title}
+                    </h3>
+                    <p className="mt-1 flex-1 text-sm leading-6 text-muted-foreground">
+                      {topic.shortDescription}
+                    </p>
+                    <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                      Explore topic <ArrowRight size={13} />
+                    </span>
+                  </div>
+                </TopicLink>
+              ))}
           </div>
         </section>
 
@@ -296,10 +304,13 @@ function Index() {
                 Synthetic teaching example
               </span>
             </div>
-            <InteractiveExplorer
-              topic={topics.find((topic) => topic.slug === "life-expectancy") ?? globalTopic}
-              initialIndicator="life-expectancy"
-            />
+            {trendTopic ? (
+              <InteractiveExplorer topic={trendTopic} initialIndicator="life-expectancy" />
+            ) : (
+              <p className="rounded-xl border border-border bg-background p-6 text-sm text-muted-foreground">
+                The life expectancy topic is currently unavailable.
+              </p>
+            )}
           </div>
         </section>
 
@@ -321,20 +332,23 @@ function Index() {
             </Button>
           </div>
           <div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {countries.slice(0, 8).map((country) => (
-              <CountryLink key={country.id} id={country.id}>
-                <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition hover:border-primary/40 hover:bg-muted">
-                  <span className="text-xl" aria-hidden>
-                    {country.flag}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold">{country.name}</span>
-                    <span className="block text-xs text-muted-foreground">{country.region}</span>
-                  </span>
-                  <ArrowUpRight size={15} className="text-muted-foreground" />
-                </div>
-              </CountryLink>
-            ))}
+            {countries
+              .filter((country) => country.active !== false)
+              .slice(0, 8)
+              .map((country) => (
+                <CountryLink key={country.id} id={country.id}>
+                  <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition hover:border-primary/40 hover:bg-muted">
+                    <span className="text-xl" aria-hidden>
+                      {country.flag}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{country.name}</span>
+                      <span className="block text-xs text-muted-foreground">{country.region}</span>
+                    </span>
+                    <ArrowUpRight size={15} className="text-muted-foreground" />
+                  </div>
+                </CountryLink>
+              ))}
           </div>
         </section>
 

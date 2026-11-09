@@ -32,6 +32,7 @@ function CountriesPage() {
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return countries.filter((country) => {
+      if (country.active === false) return false;
       if (!normalized) return true;
       return (
         country.name.toLowerCase().includes(normalized) ||
@@ -55,7 +56,8 @@ function CountriesPage() {
               Country explorer
             </p>
             <h1 className="mt-2 font-display text-4xl font-bold">
-              Explore health across 12 countries
+              Explore health across {countries.filter((country) => country.active !== false).length}{" "}
+              countries
             </h1>
           </div>
           <Button asChild variant="outline">

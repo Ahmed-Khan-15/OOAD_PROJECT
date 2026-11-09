@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { PublicLayout } from "@/components/public-shell";
-import { countries, getCountry, getIndicator, healthRecords, topics } from "@/data/health";
+import { countries, getCountry, healthRecords, topics } from "@/data/health";
 
 const sampleYears = [2000, 2008, 2016, 2023];
 const palette = [
@@ -55,25 +55,32 @@ function ComparePage() {
   const [year, setYear] = useState(2023);
   const [chartType, setChartType] = useState<ChartType>("line");
 
-  const indicatorOptions = useMemo(
-    () =>
-      topics
-        .flatMap((topic) => topic.indicators)
-        .filter((indicator) => indicator.hasIllustrativeData),
-    [],
-  );
+  const indicatorOptions = topics
+    .flatMap((topic) => topic.indicators)
+    .filter(
+      (indicator) =>
+        indicator.active !== false &&
+        (indicator.hasIllustrativeData ||
+          healthRecords.some((record) => record.indicatorId === indicator.id)),
+    );
 
-  const selectedIndicator =
-    getIndicator(topics[0], indicatorId) ??
-    indicatorOptions.find((item) => item.id === indicatorId);
+  const selectedIndicator = topics
+    .flatMap((topic) => topic.indicators)
+    .find((item) => item.id === indicatorId);
+  const years = Array.from(
+    new Set([...sampleYears, ...healthRecords.map((record) => record.year)]),
+  ).sort((left, right) => left - right);
+  const comparisonYears = years.filter((yearValue) =>
+    healthRecords.some((record) => record.indicatorId === indicatorId && record.year === yearValue),
+  );
 
   const selectedCountries = countryIds
     .map((id) => countries.find((country) => country.id === id))
-    .filter(Boolean) as typeof countries;
+    .filter((country) => country && country.active !== false) as typeof countries;
 
   const trendData = useMemo(
     () =>
-      sampleYears.map((sampleYear) => {
+      years.map((sampleYear) => {
         const row: Record<string, string | number | null> = { year: sampleYear };
         selectedCountries.forEach((country, index) => {
           const value = healthRecords.find(
@@ -87,7 +94,7 @@ function ComparePage() {
         });
         return row;
       }),
-    [indicatorId, selectedCountries],
+    [indicatorId, selectedCountries, years],
   );
 
   const comparisonData = useMemo(
@@ -158,7 +165,7 @@ function ComparePage() {
                 onChange={(event) => setYear(Number(event.target.value))}
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm font-normal text-foreground"
               >
-                {sampleYears.map((value) => (
+                {comparisonYears.map((value) => (
                   <option key={value} value={value}>
                     {value}
                   </option>
@@ -193,20 +200,22 @@ function ComparePage() {
           <div className="mt-6">
             <p className="mb-2 text-sm font-semibold">Countries</p>
             <div className="flex flex-wrap gap-2">
-              {countries.map((country) => (
-                <label
-                  key={country.id}
-                  className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-xs ${countryIds.includes(country.id) ? "border-primary bg-secondary text-secondary-foreground" : "border-border bg-background text-muted-foreground"}`}
-                >
-                  <input
-                    checked={countryIds.includes(country.id)}
-                    type="checkbox"
-                    onChange={() => toggleCountry(country.id)}
-                    className="accent-primary"
-                  />
-                  {country.flag} {country.name}
-                </label>
-              ))}
+              {countries
+                .filter((country) => country.active !== false)
+                .map((country) => (
+                  <label
+                    key={country.id}
+                    className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-xs ${countryIds.includes(country.id) ? "border-primary bg-secondary text-secondary-foreground" : "border-border bg-background text-muted-foreground"}`}
+                  >
+                    <input
+                      checked={countryIds.includes(country.id)}
+                      type="checkbox"
+                      onChange={() => toggleCountry(country.id)}
+                      className="accent-primary"
+                    />
+                    {country.flag} {country.name}
+                  </label>
+                ))}
             </div>
           </div>
         </section>

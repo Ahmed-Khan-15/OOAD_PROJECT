@@ -5,6 +5,7 @@ export type Country = {
   region: string;
   intro: string;
   active: boolean;
+  isoCode?: string;
 };
 
 export type Indicator = {
@@ -14,6 +15,8 @@ export type Indicator = {
   description: string;
   howToRead: string;
   hasIllustrativeData: boolean;
+  active?: boolean;
+  sourceId?: string;
 };
 
 export type Topic = {
@@ -27,6 +30,18 @@ export type Topic = {
   icon: string;
   indicators: Indicator[];
   related: string[];
+  active?: boolean;
+};
+
+export type DataSource = {
+  id: string;
+  name: string;
+  organization: string;
+  url: string;
+  description: string;
+  citation: string;
+  license: string;
+  active: boolean;
 };
 
 export type HealthRecord = {
@@ -36,6 +51,10 @@ export type HealthRecord = {
   value: number;
   source: string;
   notes?: string;
+  sourceId?: string;
+  dimensions?: Record<string, string>;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 const sampleSource = "Synthetic teaching example · not a public-health statistic";
@@ -52,6 +71,7 @@ const indicator = (
 export const countries: Country[] = [
   {
     id: "pakistan",
+    isoCode: "PAK",
     name: "Pakistan",
     flag: "🇵🇰",
     region: "South Asia",
@@ -61,6 +81,7 @@ export const countries: Country[] = [
   },
   {
     id: "india",
+    isoCode: "IND",
     name: "India",
     flag: "🇮🇳",
     region: "South Asia",
@@ -69,6 +90,7 @@ export const countries: Country[] = [
   },
   {
     id: "japan",
+    isoCode: "JPN",
     name: "Japan",
     flag: "🇯🇵",
     region: "East Asia",
@@ -77,6 +99,7 @@ export const countries: Country[] = [
   },
   {
     id: "china",
+    isoCode: "CHN",
     name: "China",
     flag: "🇨🇳",
     region: "East Asia",
@@ -85,6 +108,7 @@ export const countries: Country[] = [
   },
   {
     id: "saudi-arabia",
+    isoCode: "SAU",
     name: "Saudi Arabia",
     flag: "🇸🇦",
     region: "Middle East",
@@ -93,6 +117,7 @@ export const countries: Country[] = [
   },
   {
     id: "germany",
+    isoCode: "DEU",
     name: "Germany",
     flag: "🇩🇪",
     region: "Europe",
@@ -101,6 +126,7 @@ export const countries: Country[] = [
   },
   {
     id: "united-kingdom",
+    isoCode: "GBR",
     name: "United Kingdom",
     flag: "🇬🇧",
     region: "Europe",
@@ -109,6 +135,7 @@ export const countries: Country[] = [
   },
   {
     id: "united-states",
+    isoCode: "USA",
     name: "United States",
     flag: "🇺🇸",
     region: "North America",
@@ -117,6 +144,7 @@ export const countries: Country[] = [
   },
   {
     id: "brazil",
+    isoCode: "BRA",
     name: "Brazil",
     flag: "🇧🇷",
     region: "South America",
@@ -126,6 +154,7 @@ export const countries: Country[] = [
   },
   {
     id: "nigeria",
+    isoCode: "NGA",
     name: "Nigeria",
     flag: "🇳🇬",
     region: "Africa",
@@ -134,6 +163,7 @@ export const countries: Country[] = [
   },
   {
     id: "south-africa",
+    isoCode: "ZAF",
     name: "South Africa",
     flag: "🇿🇦",
     region: "Africa",
@@ -142,6 +172,7 @@ export const countries: Country[] = [
   },
   {
     id: "australia",
+    isoCode: "AUS",
     name: "Australia",
     flag: "🇦🇺",
     region: "Oceania",

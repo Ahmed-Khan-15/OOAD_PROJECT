@@ -129,23 +129,34 @@ export function PublicFooter() {
             Topics
           </p>
           <div className="grid gap-2 text-sm">
-            {topics.slice(1, 5).map((topic) => (
-              <Link
-                key={topic.slug}
-                to="/topics/$slug"
-                params={{ slug: topic.slug }}
-                className="text-foreground/80 hover:text-primary"
-              >
-                {topic.title}
-              </Link>
-            ))}
+            {topics
+              .filter((topic) => topic.active !== false)
+              .slice(1, 5)
+              .map((topic) => (
+                <Link
+                  key={topic.slug}
+                  to="/topics/$slug"
+                  params={{ slug: topic.slug }}
+                  className="text-foreground/80 hover:text-primary"
+                >
+                  {topic.title}
+                </Link>
+              ))}
           </div>
         </div>
       </div>
       <div className="border-t border-border">
         <div className="page-wrap flex flex-col justify-between gap-2 py-4 text-xs text-muted-foreground sm:flex-row">
           <span>© 2026 Global Health Explorer · Educational prototype</span>
-          <span>Sample values are not verified real-world statistics.</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span>Sample values are not verified real-world statistics.</span>
+            <Link
+              to="/admin/login"
+              className="font-medium text-muted-foreground/80 hover:text-primary"
+            >
+              Admin sign in
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

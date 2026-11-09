@@ -36,32 +36,34 @@ function TopicsIndex() {
           values are synthetic and only included where shown.
         </p>
         <div className="mt-8 divide-y divide-border border-y border-border">
-          {topics.map((topic, index) => (
-            <article
-              key={topic.slug}
-              className="grid gap-4 py-6 sm:grid-cols-[48px_1fr_auto] sm:items-center"
-            >
-              <span className="flex size-11 items-center justify-center rounded-full bg-secondary font-display text-sm font-bold text-primary">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <div>
-                <h2 className="font-display text-xl font-bold">{topic.title}</h2>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  {topic.shortDescription}
-                </p>
-                <p className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <BookOpenText size={14} />
-                  {topic.indicators.length || "Overview"}{" "}
-                  {topic.indicators.length ? "selectable measures" : "guide"}
-                </p>
-              </div>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/topics/$slug" params={{ slug: topic.slug }}>
-                  Read guide <ArrowRight size={15} />
-                </Link>
-              </Button>
-            </article>
-          ))}
+          {topics
+            .filter((topic) => topic.active !== false)
+            .map((topic, index) => (
+              <article
+                key={topic.slug}
+                className="grid gap-4 py-6 sm:grid-cols-[48px_1fr_auto] sm:items-center"
+              >
+                <span className="flex size-11 items-center justify-center rounded-full bg-secondary font-display text-sm font-bold text-primary">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h2 className="font-display text-xl font-bold">{topic.title}</h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    {topic.shortDescription}
+                  </p>
+                  <p className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <BookOpenText size={14} />
+                    {topic.indicators.length || "Overview"}{" "}
+                    {topic.indicators.length ? "selectable measures" : "guide"}
+                  </p>
+                </div>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/topics/$slug" params={{ slug: topic.slug }}>
+                    Read guide <ArrowRight size={15} />
+                  </Link>
+                </Button>
+              </article>
+            ))}
         </div>
       </main>
     </PublicLayout>

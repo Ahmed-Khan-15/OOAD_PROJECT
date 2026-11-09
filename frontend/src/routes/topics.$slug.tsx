@@ -1,36 +1,39 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, BookOpenText, CircleHelp, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicLayout } from "@/components/public-shell";
 import { InteractiveExplorer } from "@/components/interactive-explorer";
-import { getTopic, topics } from "@/data/health";
+import { getTopic, healthRecords, topics } from "@/data/health";
 
 export const Route = createFileRoute("/topics/$slug")({
-  loader: ({ params }) => {
-    const topic = getTopic(params.slug);
-    if (!topic) throw notFound();
-    return { topic };
-  },
-  head: ({ loaderData }) => {
-    const title = loaderData?.topic.title ?? "Health topic";
-    const description =
-      loaderData?.topic.shortDescription ?? "Explore a plain-language global health guide.";
-    return {
-      meta: [
-        { title: `${title} | Global Health Explorer` },
-        { name: "description", content: description },
-        { property: "og:title", content: `${title} | Global Health Explorer` },
-        { property: "og:description", content: description },
-        { property: "og:type", content: "article" },
-        { name: "twitter:card", content: "summary_large_image" },
-      ],
-    };
-  },
+  head: () => ({
+    meta: [
+      { title: "Health Topic | Global Health Explorer" },
+      { name: "description", content: "Explore a plain-language health topic guide." },
+      { property: "og:title", content: "Health Topic | Global Health Explorer" },
+      { property: "og:description", content: "Explore a plain-language health topic guide." },
+      { property: "og:type", content: "article" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: TopicPage,
 });
 
 function TopicPage() {
-  const { topic } = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const topic = getTopic(slug);
+  if (!topic || topic.active === false) {
+    return (
+      <PublicLayout>
+        <main className="page-wrap py-16">
+          <h1 className="font-display text-3xl font-bold">Topic unavailable</h1>
+          <p className="mt-3 text-muted-foreground">
+            This topic may be inactive or not yet available in this browser.
+          </p>
+        </main>
+      </PublicLayout>
+    );
+  }
   const isOverview = topic.slug === "global-health";
   return (
     <PublicLayout>
@@ -113,25 +116,30 @@ function TopicPage() {
                   time period, unit, and method all affect what it can tell us.
                 </p>
                 <div className="mt-5 divide-y divide-border">
-                  {topic.indicators.map((item) => (
-                    <article
-                      key={item.id}
-                      className="grid gap-2 py-4 sm:grid-cols-[1fr_auto] sm:items-start"
-                    >
-                      <div>
-                        <h3 className="font-semibold">{item.name}</h3>
-                        <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                          {item.description}
-                        </p>
-                        <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
-                          How to read it: {item.howToRead}
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-                        {item.hasIllustrativeData ? "Example values" : "No sample values"}
-                      </span>
-                    </article>
-                  ))}
+                  {topic.indicators
+                    .filter((item) => item.active !== false)
+                    .map((item) => (
+                      <article
+                        key={item.id}
+                        className="grid gap-2 py-4 sm:grid-cols-[1fr_auto] sm:items-start"
+                      >
+                        <div>
+                          <h3 className="font-semibold">{item.name}</h3>
+                          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                            {item.description}
+                          </p>
+                          <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
+                            How to read it: {item.howToRead}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                          {item.hasIllustrativeData ||
+                          healthRecords.some((record) => record.indicatorId === item.id)
+                            ? "Values available"
+                            : "No sample values"}
+                        </span>
+                      </article>
+                    ))}
                 </div>
               </section>
             )}
@@ -147,24 +155,28 @@ function TopicPage() {
                 </p>
                 <h2 className="mt-2 font-display text-2xl font-bold">Many questions, connected</h2>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  {topics.slice(1).map((related) => (
-                    <Link
-                      key={related.slug}
-                      to="/topics/$slug"
-                      params={{ slug: related.slug }}
-                      className="flex items-center justify-between gap-4 border-b border-border py-4 hover:text-primary"
-                    >
-                      <span>
-                        <strong className="block font-semibold text-foreground">
-                          {related.title}
-                        </strong>
-                        <span className="mt-1 block text-sm text-muted-foreground">
-                          {related.shortDescription}
+                  {topics
+                    .filter(
+                      (related) => related.active !== false && related.slug !== "global-health",
+                    )
+                    .map((related) => (
+                      <Link
+                        key={related.slug}
+                        to="/topics/$slug"
+                        params={{ slug: related.slug }}
+                        className="flex items-center justify-between gap-4 border-b border-border py-4 hover:text-primary"
+                      >
+                        <span>
+                          <strong className="block font-semibold text-foreground">
+                            {related.title}
+                          </strong>
+                          <span className="mt-1 block text-sm text-muted-foreground">
+                            {related.shortDescription}
+                          </span>
                         </span>
-                      </span>
-                      <ArrowRight size={17} className="shrink-0 text-primary" />
-                    </Link>
-                  ))}
+                        <ArrowRight size={17} className="shrink-0 text-primary" />
+                      </Link>
+                    ))}
                 </div>
               </section>
             )}

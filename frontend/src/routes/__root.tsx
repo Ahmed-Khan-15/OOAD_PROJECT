@@ -8,10 +8,11 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { initializeAdminData, subscribeAdminData } from "@/data/admin-data";
 
 function NotFoundComponent() {
   return (
@@ -120,6 +121,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [, setDataRevision] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = subscribeAdminData(() => setDataRevision((revision) => revision + 1));
+    initializeAdminData();
+    return unsubscribe;
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

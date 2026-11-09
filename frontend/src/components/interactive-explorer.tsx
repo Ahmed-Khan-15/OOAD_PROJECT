@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -41,13 +41,6 @@ export function InteractiveExplorer({
   topic: Topic;
   initialIndicator?: string;
 }) {
-  const available = useMemo(
-    () =>
-      topic.indicators.filter((item) =>
-        healthRecords.some((record) => record.indicatorId === item.id),
-      ),
-    [topic],
-  );
   const [indicatorId, setIndicatorId] = useState(
     initialIndicator && topic.indicators.some((item) => item.id === initialIndicator)
       ? initialIndicator
@@ -75,11 +68,27 @@ export function InteractiveExplorer({
       ?.value,
     countryId,
   }));
-  const yearsOptions = [2000, 2008, 2016, 2023];
+  const yearsOptions = Array.from(
+    new Set([
+      2000,
+      2008,
+      2016,
+      2023,
+      ...healthRecords
+        .filter((record) => record.indicatorId === indicatorId)
+        .map((record) => record.year),
+    ]),
+  ).sort((left, right) => left - right);
   const validYears = yearsOptions.filter((year) => year >= fromYear && year <= toYear);
   const isDataAvailable = records.length > 0;
   const currentYear = records.filter((record) => record.year === toYear);
   const unitsLabel = selected?.unit ?? "";
+  const isSyntheticOnly =
+    records.length > 0 &&
+    records.every((record) => record.source.includes("Synthetic teaching example"));
+  const hasAdminManagedData = records.some(
+    (record) => !record.source.includes("Synthetic teaching example"),
+  );
 
   function toggleCountry(id: string) {
     setCountryIds((current) =>
@@ -102,8 +111,9 @@ export function InteractiveExplorer({
         </p>
         <h2 className="font-display text-2xl font-bold">Look closer</h2>
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-          Choose a measure and countries to see how a chart changes. These values are synthetic
-          teaching examples, not verified public-health data.
+          Choose a measure and countries to see how a chart changes. Initial teaching values are
+          synthetic; administrator-added values show their source references but are not
+          independently verified by this prototype.
         </p>
       </div>
       <div className="grid gap-5 border-b border-border px-5 py-5 sm:px-7 lg:grid-cols-[1fr_1fr]">
@@ -115,12 +125,17 @@ export function InteractiveExplorer({
             onChange={(event) => setIndicatorId(event.target.value)}
             className="h-10 w-full rounded-md border border-input bg-background px-3 font-normal text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {topic.indicators.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-                {item.hasIllustrativeData ? " · example available" : " · no sample values"}
-              </option>
-            ))}
+            {topic.indicators
+              .filter((item) => item.active !== false)
+              .map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                  {item.hasIllustrativeData ||
+                  healthRecords.some((record) => record.indicatorId === item.id)
+                    ? " · values available"
+                    : " · no sample values"}
+                </option>
+              ))}
           </select>
         </label>
         <div className="grid grid-cols-2 gap-3">
@@ -164,20 +179,22 @@ export function InteractiveExplorer({
             Countries <span className="font-normal text-muted-foreground">Choose one or more</span>
           </p>
           <div className="flex flex-wrap gap-2">
-            {countries.map((country) => (
-              <label
-                key={country.id}
-                className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-xs transition ${countryIds.includes(country.id) ? "border-primary bg-secondary text-secondary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/40"}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={countryIds.includes(country.id)}
-                  onChange={() => toggleCountry(country.id)}
-                  className="accent-primary"
-                />
-                {country.flag} {country.name}
-              </label>
-            ))}
+            {countries
+              .filter((country) => country.active !== false)
+              .map((country) => (
+                <label
+                  key={country.id}
+                  className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-xs transition ${countryIds.includes(country.id) ? "border-primary bg-secondary text-secondary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/40"}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={countryIds.includes(country.id)}
+                    onChange={() => toggleCountry(country.id)}
+                    className="accent-primary"
+                  />
+                  {country.flag} {country.name}
+                </label>
+              ))}
           </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:col-span-2">
@@ -220,7 +237,11 @@ export function InteractiveExplorer({
               </p>
             </div>
             <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
-              Illustrative only
+              {isSyntheticOnly
+                ? "Synthetic examples"
+                : hasAdminManagedData
+                  ? "Includes admin data"
+                  : "No data"}
             </span>
           </div>
           {isDataAvailable ? (
@@ -263,8 +284,10 @@ export function InteractiveExplorer({
                     />
                     <Line
                       type="monotone"
-                      dataKey={countryIds[0]}
-                      name={getCountry(countryIds[0])?.name}
+                      dataKey={countryIds[0] ?? ""}
+                      name={
+                        getCountry(countryIds[0] ?? "")?.name ?? countryIds[0] ?? "Selected country"
+                      }
                       stroke={palette[0]}
                       strokeWidth={3}
                       dot={{ r: 4 }}
@@ -275,7 +298,7 @@ export function InteractiveExplorer({
                         key={id}
                         type="monotone"
                         dataKey={id}
-                        name={getCountry(id)?.name}
+                        name={getCountry(id)?.name ?? id}
                         stroke={palette[(index + 1) % palette.length]}
                         strokeWidth={2.5}
                         dot={{ r: 3 }}
@@ -322,7 +345,7 @@ export function InteractiveExplorer({
                     />
                     <Bar
                       dataKey="value"
-                      name={selected?.name}
+                      name={selected?.name ?? "Selected indicator"}
                       fill={palette[0]}
                       radius={[5, 5, 0, 0]}
                     />
@@ -403,8 +426,9 @@ export function InteractiveExplorer({
               Data note
             </p>
             <p className="mt-2 text-sm leading-6 text-foreground">
-              Synthetic examples help demonstrate how comparisons work. They are not real
-              measurements and have no public-health source.
+              {hasAdminManagedData
+                ? "Administrator-added rows may include source references. Check the source and year; the prototype does not independently verify their accuracy."
+                : "Synthetic examples demonstrate comparisons only. They are not real measurements and have no public-health source."}
             </p>
           </div>
           {isDataAvailable && (
@@ -416,7 +440,7 @@ export function InteractiveExplorer({
                 Years shown: {validYears.length ? validYears.join(", ") : years.join(", ")}
               </p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Source: Synthetic teaching example · no external dataset
+                Sources: {[...new Set(records.map((record) => record.source))].join("; ")}
               </p>
             </div>
           )}
