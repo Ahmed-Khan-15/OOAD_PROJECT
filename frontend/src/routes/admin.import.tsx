@@ -1,303 +1,182 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, CheckCircle2, Download, FileUp, Upload } from "lucide-react";
-import { useMemo, useRef, useState, type DragEvent } from "react";
-import { AdminLayout } from "@/components/admin-shell";
+import { useState, type FormEvent } from "react";
+import { AdminLayout, AdminPageHeading } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
-import { getAdminData, saveHealthRecords } from "@/data/admin-data";
-import { validateHealthRecordCsv, type RejectedCsvRow } from "@/data/csv-import";
-
-const cardClass = "rounded-xl border border-border bg-card";
+import { api, type ImportApi } from "@/lib/api";
+import { useApiQuery } from "@/lib/use-api-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 
 export const Route = createFileRoute("/admin/import")({
   head: () => ({ meta: [{ title: "CSV Import | Admin | Global Health Explorer" }] }),
   component: CsvImportPage,
 });
 
-function downloadRejected(rejected: RejectedCsvRow[]) {
-  const columns = [
-    "row",
-    "reason",
-    "country",
-    "indicator",
-    "year",
-    "value",
-    "source",
-    "dimensions",
-    "notes",
-  ];
-  const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
-  const csv = [
-    columns.join(","),
-    ...rejected.map((item) =>
-      [
-        item.line,
-        item.reason,
-        item.values.country,
-        item.values.indicator,
-        item.values.year,
-        item.values.value,
-        item.values.source,
-        item.values.dimensions,
-        item.values.notes,
-      ]
-        .map((value) => escape(String(value)))
-        .join(","),
-    ),
-  ].join("\r\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = "health-records-rejected.csv";
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
 function CsvImportPage() {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [fileName, setFileName] = useState("");
-  const [fileText, setFileText] = useState("");
-  const [dragging, setDragging] = useState(false);
+  const client = useQueryClient();
+  const datasets = useApiQuery(["admin", "datasets"], api.adminDatasets);
+  const [datasetSlug, setDatasetSlug] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [result, setResult] = useState<ImportApi | null>(null);
   const [error, setError] = useState("");
-  const [summary, setSummary] = useState<{ imported: number; rejected: number } | null>(null);
-  const validation = useMemo(() => {
-    if (!fileText) return null;
-    try {
-      return validateHealthRecordCsv(fileText, getAdminData());
-    } catch (issue) {
-      return { error: issue instanceof Error ? issue.message : "Could not read the CSV." };
-    }
-  }, [fileText]);
-  const report = validation && "valid" in validation ? validation : null;
-
-  const loadFile = async (file?: File) => {
-    if (!file) return;
-    setError("");
-    setSummary(null);
-    if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
-      setError("Choose a CSV file.");
-      return;
-    }
-    try {
-      setFileText(await file.text());
-      setFileName(file.name);
-    } catch (issue) {
-      console.error("Could not read selected CSV file.", issue);
-      setError("The selected file could not be read by this browser.");
-    }
-  };
-
-  const onDrop = (event: DragEvent<HTMLDivElement>) => {
+  const history = useApiQuery(["admin", "imports", datasetSlug], () => api.imports(datasetSlug));
+  function downloadErrors(item: ImportApi) {
+    const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const csv = [
+      ["row", "code", "message", "raw_row"].join(","),
+      ...item.errors.map((row) =>
+        [row.rowNumber, row.code, row.message, JSON.stringify(row.rawRow ?? {})]
+          .map(escape)
+          .join(","),
+      ),
+    ].join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${item.filename}-errors.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setDragging(false);
-    void loadFile(event.dataTransfer.files[0]);
-  };
-
-  const importValid = () => {
-    if (!report) return;
-    const freshValidation = validateHealthRecordCsv(fileText, getAdminData());
-    if (freshValidation.valid.length === 0) {
-      setSummary({ imported: 0, rejected: freshValidation.rejected.length });
+    setError("");
+    setResult(null);
+    if (!datasetSlug || !file) {
+      setError("Choose a dataset and a CSV file.");
       return;
     }
-    saveHealthRecords([
-      ...getAdminData().healthRecords,
-      ...freshValidation.valid.map((item) => item.record),
-    ]);
-    setSummary({
-      imported: freshValidation.valid.length,
-      rejected: freshValidation.rejected.length,
-    });
-    setFileText("");
-    setFileName("");
-  };
-
+    try {
+      const summary = await api.importCsv(datasetSlug, file);
+      setResult(summary);
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["admin", "imports", datasetSlug] }),
+        client.invalidateQueries({ queryKey: ["observations"] }),
+      ]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "CSV import failed.");
+    }
+  }
+  const showImport = (item: ImportApi) => (
+    <article
+      key={`${item.checksum}-${item.startedAt}`}
+      className="rounded-lg border border-border p-4"
+    >
+      <div className="flex flex-wrap justify-between gap-2">
+        <strong>{item.filename}</strong>
+        <span className="text-xs font-semibold uppercase text-primary">{item.status}</span>
+      </div>
+      <p className="mt-2 text-sm">{item.summary}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {item.totalRows} rows · {item.acceptedRows} accepted · {item.rejectedRows} rejected ·{" "}
+        {item.duplicateRows} duplicates
+      </p>
+      {item.errors.length > 0 && (
+        <div className="mt-3 overflow-x-auto">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">Row-level issues</h3>
+            <Button size="sm" variant="outline" onClick={() => downloadErrors(item)}>
+              <Download size={14} />
+              Download errors
+            </Button>
+          </div>
+          <table className="mt-2 w-full min-w-[560px] text-left text-xs">
+            <thead>
+              <tr>
+                <th className="py-2">Row</th>
+                <th>Code</th>
+                <th>Issue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {item.errors.map((row, index) => (
+                <tr key={`${row.rowNumber}-${index}`} className="border-t">
+                  <td className="py-2">{row.rowNumber ?? "—"}</td>
+                  <td>{row.code}</td>
+                  <td>{row.message}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </article>
+  );
   return (
     <AdminLayout
       title="CSV import"
-      description="Upload a file, inspect row-level validation, then import only the observations that pass."
+      description="Submit a CSV to a registered dataset. The backend validates provenance, dimensions, and duplicate observations."
     >
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
-        <section className={`${cardClass} p-5 sm:p-6`}>
-          <div
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
-            className={`rounded-xl border-2 border-dashed p-7 text-center transition sm:p-10 ${dragging ? "border-primary bg-secondary/60" : "border-border bg-wash/50"}`}
+      <AdminPageHeading
+        title="Import health observations"
+        description="Uploads are processed by the backend and retain row-level validation results."
+      />
+      <form
+        onSubmit={(event) => void submit(event)}
+        className="grid max-w-2xl gap-4 rounded-xl border border-border bg-card p-5"
+      >
+        <label className="grid gap-1 text-sm font-medium">
+          Dataset
+          <select
+            required
+            value={datasetSlug}
+            onChange={(event) => setDatasetSlug(event.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3"
           >
-            <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary text-primary">
-              <FileUp size={21} />
-            </span>
-            <h2 className="mt-4 font-display text-xl font-bold">Select or drop a CSV file</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              The file is read and validated in your browser. Nothing is uploaded to a server.
+            <option value="">Select a registered dataset</option>
+            {(datasets.data ?? []).map((item) => (
+              <option key={item.slug} value={item.slug}>
+                {item.name} · {item.source.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm font-medium">
+          CSV file
+          <input
+            required
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            className="rounded-md border border-input bg-background p-2 text-sm"
+          />
+        </label>
+        <p className="text-xs leading-5 text-muted-foreground">
+          Use the backend CSV format described in the import documentation. Only administrator
+          uploads are accepted; do not import synthetic teaching observations as real data.
+        </p>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+        <Button type="submit" disabled={!datasetSlug || !file}>
+          Upload and validate CSV
+        </Button>
+      </form>
+      {result && (
+        <section className="mt-6">
+          <h2 className="mb-3 font-display text-xl font-bold">Import result</h2>
+          {showImport(result)}
+        </section>
+      )}
+      {datasetSlug && (
+        <section className="mt-8">
+          <h2 className="mb-3 font-display text-xl font-bold">Previous imports</h2>
+          {history.isLoading ? (
+            <p>Loading import history…</p>
+          ) : history.isError ? (
+            <p role="alert" className="text-sm text-destructive">
+              Import history could not be loaded.
             </p>
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="sr-only"
-              aria-label="Select CSV file"
-              onChange={(event) => void loadFile(event.target.files?.[0])}
-            />
-            <Button className="mt-5" variant="outline" onClick={() => inputRef.current?.click()}>
-              <Upload size={15} /> Choose CSV
-            </Button>
-            {fileName && (
-              <p className="mt-3 text-xs font-medium text-foreground">Selected: {fileName}</p>
-            )}
-          </div>
-          {error && (
-            <p
-              role="alert"
-              className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-            >
-              {error}
+          ) : history.data?.length ? (
+            <div className="grid gap-3">{history.data.map(showImport)}</div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No imports have been submitted for this dataset.
             </p>
-          )}
-          {validation && "error" in validation && (
-            <p
-              role="alert"
-              className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-            >
-              {validation.error}
-            </p>
-          )}
-          {summary && (
-            <div
-              role="status"
-              className="mt-4 flex items-start gap-3 rounded-xl border border-primary/20 bg-secondary/60 p-4"
-            >
-              <CheckCircle2 className="mt-0.5 shrink-0 text-primary" size={18} />
-              <div>
-                <p className="font-semibold">Import finished</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {summary.imported} records imported. {summary.rejected} rows rejected.
-                </p>
-              </div>
-            </div>
-          )}
-          {report && (
-            <div className="mt-5">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="font-display text-lg font-bold">Validation results</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {report.preview.length} data rows · {report.valid.length} valid ·{" "}
-                    {report.rejected.length} rejected
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {report.rejected.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => downloadRejected(report.rejected)}
-                    >
-                      <Download size={14} /> Rejected rows
-                    </Button>
-                  )}
-                  <Button size="sm" disabled={report.valid.length === 0} onClick={importValid}>
-                    Import {report.valid.length} valid rows
-                  </Button>
-                </div>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-xl border border-border p-4">
-                  <h4 className="flex items-center gap-2 font-semibold text-primary">
-                    <CheckCircle2 size={16} /> Valid rows ({report.valid.length})
-                  </h4>
-                  <div className="mt-3 max-h-64 space-y-2 overflow-auto text-xs">
-                    {report.valid.slice(0, 100).map(({ line, record }) => (
-                      <p key={line} className="rounded-lg bg-wash p-2">
-                        Row {line} · {record.countryId} · {record.indicatorId} · {record.year} ·{" "}
-                        {record.value}
-                      </p>
-                    ))}
-                    {report.valid.length > 100 && (
-                      <p className="text-muted-foreground">Showing first 100 rows.</p>
-                    )}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-destructive/20 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 font-semibold text-destructive">
-                      <AlertCircle size={16} /> Rejected rows ({report.rejected.length})
-                    </h4>
-                    {report.rejected.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => downloadRejected(report.rejected)}
-                      >
-                        <Download size={14} /> Download
-                      </Button>
-                    )}
-                  </div>
-                  <div className="mt-3 max-h-64 space-y-2 overflow-auto text-xs">
-                    {report.rejected.slice(0, 100).map((item) => (
-                      <div key={item.line} className="rounded-lg bg-destructive/5 p-2">
-                        <p className="font-semibold">Row {item.line}</p>
-                        <p className="mt-1 text-destructive">{item.reason}</p>
-                      </div>
-                    ))}
-                    {report.rejected.length === 0 && (
-                      <p className="text-muted-foreground">No rejected rows.</p>
-                    )}
-                    {report.rejected.length > 100 && (
-                      <p className="text-muted-foreground">Showing first 100 rows.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
           )}
         </section>
-
-        <aside className={`${cardClass} h-fit p-5 sm:p-6`}>
-          <p className="text-xs font-bold uppercase tracking-wider text-primary">
-            Supported CSV format
-          </p>
-          <h2 className="mt-1 font-display text-xl font-bold">One row per observation</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Use the normalized column names below. Source-specific exports should be mapped to this
-            format first.
-          </p>
-          <div className="mt-4 rounded-lg bg-wash p-3 font-mono text-xs leading-6">
-            country,indicator,year,value,source,dimensions,notes
-          </div>
-          <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-            <li>
-              <strong className="text-foreground">Required:</strong> country, indicator, year,
-              value.
-            </li>
-            <li>
-              <strong className="text-foreground">Country:</strong> use ID, name, or ISO code.
-            </li>
-            <li>
-              <strong className="text-foreground">Indicator:</strong> use indicator ID or exact
-              name.
-            </li>
-            <li>
-              <strong className="text-foreground">Optional:</strong> source ID/name, notes,
-              dimensions JSON.
-            </li>
-            <li>
-              <strong className="text-foreground">Duplicate key:</strong> country + indicator + year
-              + dimensions.
-            </li>
-          </ul>
-          <a
-            href={`data:text/csv;charset=utf-8,${encodeURIComponent("country,indicator,year,value,source,dimensions,notes\nPakistan,life-expectancy,2023,67,,{},Example row")}`}
-            download="health-records-template.csv"
-            className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary"
-          >
-            <Download size={15} /> Download template
-          </a>
-        </aside>
-      </div>
+      )}
     </AdminLayout>
   );
 }

@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { PublicLayout } from "@/components/public-shell";
 import { countries, getCountry, healthRecords, topics } from "@/data/health";
 
-const sampleYears = [2000, 2008, 2016, 2023];
 const palette = [
   "var(--color-chart-1)",
   "var(--color-chart-2)",
@@ -57,19 +56,14 @@ function ComparePage() {
 
   const indicatorOptions = topics
     .flatMap((topic) => topic.indicators)
-    .filter(
-      (indicator) =>
-        indicator.active !== false &&
-        (indicator.hasIllustrativeData ||
-          healthRecords.some((record) => record.indicatorId === indicator.id)),
-    );
+    .filter((indicator) => indicator.active !== false);
 
   const selectedIndicator = topics
     .flatMap((topic) => topic.indicators)
     .find((item) => item.id === indicatorId);
-  const years = Array.from(
-    new Set([...sampleYears, ...healthRecords.map((record) => record.year)]),
-  ).sort((left, right) => left - right);
+  const years = Array.from(new Set(healthRecords.map((record) => record.year))).sort(
+    (left, right) => left - right,
+  );
   const comparisonYears = years.filter((yearValue) =>
     healthRecords.some((record) => record.indicatorId === indicatorId && record.year === yearValue),
   );
@@ -165,11 +159,15 @@ function ComparePage() {
                 onChange={(event) => setYear(Number(event.target.value))}
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm font-normal text-foreground"
               >
-                {comparisonYears.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
+                {comparisonYears.length ? (
+                  comparisonYears.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))
+                ) : (
+                  <option value={year}>No published observations</option>
+                )}
               </select>
             </label>
 
@@ -197,6 +195,12 @@ function ComparePage() {
             </div>
           </div>
 
+          {!comparisonYears.length && (
+            <p role="status" className="mt-5 rounded-lg bg-wash p-4 text-sm text-muted-foreground">
+              No published observations are available for this indicator. Missing data is not
+              treated as zero.
+            </p>
+          )}
           <div className="mt-6">
             <p className="mb-2 text-sm font-semibold">Countries</p>
             <div className="flex flex-wrap gap-2">

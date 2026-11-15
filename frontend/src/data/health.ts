@@ -52,6 +52,7 @@ export type HealthRecord = {
   source: string;
   notes?: string;
   sourceId?: string;
+  datasetId?: string;
   dimensions?: Record<string, string>;
   createdAt?: string;
   updatedAt?: string;
@@ -683,7 +684,8 @@ const yearValues: Record<string, Record<string, number[]>> = {
 };
 const sampleYears = [2000, 2008, 2016, 2023];
 
-export const healthRecords: HealthRecord[] = Object.entries(yearValues).flatMap(
+/** Teaching observations are kept apart from published backend observations. */
+export const syntheticHealthRecords: HealthRecord[] = Object.entries(yearValues).flatMap(
   ([indicatorId, byCountry]) =>
     Object.entries(byCountry).flatMap(([countryId, values]) =>
       values.map((value, index) => ({
@@ -695,6 +697,9 @@ export const healthRecords: HealthRecord[] = Object.entries(yearValues).flatMap(
       })),
     ),
 );
+
+/** Real observations are populated only from the backend; missing rows stay missing. */
+export const healthRecords: HealthRecord[] = [];
 
 export const sampleYearRange = [2000, 2023] as const;
 

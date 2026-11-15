@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ArrowUpRight, Menu, Search, HeartPulse } from "lucide-react";
+import { ArrowUpRight, Menu, Search, HeartPulse, Heart } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { countries, topics } from "@/data/health";
@@ -8,7 +8,7 @@ const primaryLinks = [
   { to: "/topics", label: "Explore topics" },
   { to: "/countries", label: "Countries" },
   { to: "/compare", label: "Compare" },
-  { to: "/about", label: "About" },
+  { to: "/articles", label: "Articles" },
 ] as const;
 
 export function PublicHeader() {
@@ -43,14 +43,14 @@ export function PublicHeader() {
         </nav>
         <div className="hidden items-center gap-3 lg:flex">
           <Link
-            to="/countries"
+            to="/search"
             className="flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
           >
-            <Search size={15} /> Find a country
+            <Search size={15} /> Search
           </Link>
           <Button asChild size="sm" className="rounded-full">
-            <Link to="/topics">
-              Start exploring <ArrowUpRight size={15} />
+            <Link to="/donate">
+              <Heart size={15} /> Support
             </Link>
           </Button>
         </div>
@@ -85,7 +85,28 @@ export function PublicHeader() {
               to="/countries"
               className="rounded-lg px-3 py-3 text-sm font-medium text-primary"
             >
-              Find a country
+              Search the site
+            </Link>
+            <Link
+              onClick={() => setMobileOpen(false)}
+              to="/glossary"
+              className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              Health glossary
+            </Link>
+            <Link
+              onClick={() => setMobileOpen(false)}
+              to="/sources"
+              className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              Sources & methodology
+            </Link>
+            <Link
+              onClick={() => setMobileOpen(false)}
+              to="/donate"
+              className="rounded-lg px-3 py-3 text-sm font-semibold text-primary hover:bg-muted"
+            >
+              Support this project
             </Link>
           </div>
         </nav>
@@ -97,7 +118,7 @@ export function PublicHeader() {
 export function PublicFooter() {
   return (
     <footer className="border-t border-border bg-card">
-      <div className="page-wrap grid gap-10 py-12 md:grid-cols-[1.5fr_1fr_1fr]">
+      <div className="page-wrap grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Link to="/" className="inline-flex items-center gap-2 font-display font-bold">
             <HeartPulse className="text-primary" size={19} /> Global Health Explorer
@@ -116,6 +137,10 @@ export function PublicFooter() {
               { to: "/topics", label: "All health topics" },
               { to: "/countries", label: "Countries" },
               { to: "/compare", label: "Compare countries" },
+              { to: "/articles", label: "Articles & research" },
+              { to: "/glossary", label: "Health glossary" },
+              { to: "/sources", label: "Sources & methodology" },
+              { to: "/donate", label: "Support the project" },
               { to: "/about", label: "About this project" },
             ].map((item) => (
               <Link key={item.to} to={item.to} className="text-foreground/80 hover:text-primary">
@@ -142,6 +167,25 @@ export function PublicFooter() {
                   {topic.title}
                 </Link>
               ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Read & support
+          </p>
+          <div className="grid gap-2 text-sm">
+            <Link to="/articles" className="text-foreground/80 hover:text-primary">
+              Articles and research
+            </Link>
+            <Link to="/glossary" className="text-foreground/80 hover:text-primary">
+              Health glossary
+            </Link>
+            <Link to="/sources" className="text-foreground/80 hover:text-primary">
+              Sources & methodology
+            </Link>
+            <Link to="/donate" className="text-foreground/80 hover:text-primary">
+              Support the project
+            </Link>
           </div>
         </div>
       </div>

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { PublicLayout } from "@/components/public-shell";
 import { InteractiveExplorer } from "@/components/interactive-explorer";
 import { getTopic, healthRecords, topics } from "@/data/health";
+import { api } from "@/lib/api";
+import { useApiQuery } from "@/lib/use-api-query";
 
 export const Route = createFileRoute("/topics/$slug")({
   head: () => ({
@@ -21,6 +23,7 @@ export const Route = createFileRoute("/topics/$slug")({
 
 function TopicPage() {
   const { slug } = Route.useParams();
+  const topicQuery = useApiQuery(["topic", slug], () => api.topic(slug));
   const topic = getTopic(slug);
   if (!topic || topic.active === false) {
     return (
@@ -28,7 +31,9 @@ function TopicPage() {
         <main className="page-wrap py-16">
           <h1 className="font-display text-3xl font-bold">Topic unavailable</h1>
           <p className="mt-3 text-muted-foreground">
-            This topic may be inactive or not yet available in this browser.
+            {topicQuery.isLoading
+              ? "Loading the backend topic catalogue…"
+              : "This topic may be inactive or unavailable in the backend catalogue."}
           </p>
         </main>
       </PublicLayout>

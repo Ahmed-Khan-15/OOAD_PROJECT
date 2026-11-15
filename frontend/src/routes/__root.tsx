@@ -12,7 +12,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { initializeAdminData, subscribeAdminData } from "@/data/admin-data";
+import { loadBackendCatalogue } from "@/data/backend-catalogue";
 
 function NotFoundComponent() {
   return (
@@ -76,20 +76,25 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    // Replace these placeholders with the app's name and description when first building the app.
     // Each content route, / included, must still set its own head(). Never add og:image or
     // twitter:image here: every page without its own would inherit the root's preview image.
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Global Health Explorer" },
+      {
+        name: "description",
+        content:
+          "Explore global health topics, countries, indicators, and educational resources with clear context and transparent sources.",
+      },
+      { name: "author", content: "Global Health Explorer" },
+      { property: "og:title", content: "Global Health Explorer" },
+      {
+        property: "og:description",
+        content: "Explore global health topics and learn how to interpret the data.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -121,18 +126,43 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const [, setDataRevision] = useState(0);
+  const [dataRevision, setDataRevision] = useState(0);
+  const [catalogueError, setCatalogueError] = useState("");
 
   useEffect(() => {
-    const unsubscribe = subscribeAdminData(() => setDataRevision((revision) => revision + 1));
-    initializeAdminData();
-    return unsubscribe;
+    let active = true;
+    loadBackendCatalogue()
+      .then(() => {
+        if (active) {
+          setCatalogueError("");
+          setDataRevision((revision) => revision + 1);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active)
+          setCatalogueError(
+            error instanceof Error ? error.message : "The health catalogue could not be loaded.",
+          );
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {catalogueError && (
+        <div
+          role="status"
+          className="border-b border-destructive/30 bg-destructive/5 px-4 py-2 text-center text-sm text-destructive"
+        >
+          Live catalogue unavailable: {catalogueError}
+        </div>
+      )}
+      <div key={dataRevision}>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </div>
     </QueryClientProvider>
   );
 }

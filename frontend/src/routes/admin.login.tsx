@@ -2,12 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, HeartPulse, LockKeyhole } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  DEMO_ADMIN_EMAIL,
-  DEMO_ADMIN_PASSWORD,
-  isAdminSignedIn,
-  signInAdmin,
-} from "@/data/admin-auth";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/login")({
   head: () => ({
@@ -24,15 +19,19 @@ export const Route = createFileRoute("/admin/login")({
 
 function AdminLoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState(DEMO_ADMIN_EMAIL);
-  const [password, setPassword] = useState(DEMO_ADMIN_PASSWORD);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (isAdminSignedIn()) void navigate({ to: "/admin", replace: true });
+    api
+      .session()
+      .then(() => void navigate({ to: "/admin", replace: true }))
+      .catch(() => undefined);
   }, [navigate]);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -40,14 +39,22 @@ function AdminLoginPage() {
       return;
     }
     if (!password) {
-      setError("Enter the demo password.");
+      setError("Enter your password.");
       return;
     }
-    if (!signInAdmin(email, password)) {
-      setError("The email or password does not match the documented demo credentials.");
-      return;
+    setSubmitting(true);
+    try {
+      await api.login(email.trim(), password);
+      void navigate({ to: "/admin", replace: true });
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Sign in failed. Check your credentials and try again.",
+      );
+    } finally {
+      setSubmitting(false);
     }
-    void navigate({ to: "/admin", replace: true });
   };
 
   return (
@@ -64,12 +71,12 @@ function AdminLoginPage() {
             <HeartPulse size={22} />
           </div>
           <p className="mt-5 text-xs font-bold uppercase tracking-wider text-primary">
-            Prototype workspace
+            Administrator workspace
           </p>
           <h1 className="mt-1 font-display text-3xl font-bold">Administrator sign in</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Use the demo credentials to manage locally stored project data. This prototype does not
-            provide production authentication or security.
+            Sign in with an administrator account configured for this backend. Public registration
+            is not available.
           </p>
 
           <form onSubmit={submit} className="mt-6 grid gap-4">
@@ -103,29 +110,13 @@ function AdminLoginPage() {
                 {error}
               </p>
             )}
-            <Button type="submit" className="mt-1 w-full">
-              <LockKeyhole size={16} /> Sign in
+            <Button type="submit" disabled={submitting} className="mt-1 w-full">
+              <LockKeyhole size={16} /> {submitting ? "Signing in…" : "Sign in"}
             </Button>
           </form>
 
-          <div className="mt-6 rounded-xl border border-border bg-wash p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Documented demo credentials
-            </p>
-            <dl className="mt-2 grid gap-1 text-sm">
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Email</dt>
-                <dd className="font-medium">{DEMO_ADMIN_EMAIL}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Password</dt>
-                <dd className="font-medium">{DEMO_ADMIN_PASSWORD}</dd>
-              </div>
-            </dl>
-          </div>
           <p className="mt-4 text-xs leading-5 text-muted-foreground">
-            Sign-in is stored in this browser only and can be replaced with a Spring Boot
-            authentication API later.
+            Your session is managed by the backend and protected by a server-side session cookie.
           </p>
         </section>
       </div>

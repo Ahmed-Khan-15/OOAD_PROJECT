@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { PublicLayout } from "@/components/public-shell";
 import { countries, getCountry, getIndicatorTopic, healthRecords, topics } from "@/data/health";
+import { api } from "@/lib/api";
+import { useApiQuery } from "@/lib/use-api-query";
 
 const sampleYears = [2000, 2008, 2016, 2023];
 
@@ -38,7 +40,11 @@ export const Route = createFileRoute("/countries/$countryId")({
 
 function CountryProfilePage() {
   const { countryId } = Route.useParams();
-  const country = getCountry(countryId);
+  const countryQuery = useApiQuery(["country", countryId], () => api.country(countryId));
+  const apiCountry = countryQuery.data;
+  const country = apiCountry
+    ? (countries.find((item) => item.isoCode === apiCountry.iso3) ?? getCountry(countryId))
+    : getCountry(countryId);
 
   const countryRecords = useMemo(
     () => (country ? healthRecords.filter((record) => record.countryId === country.id) : []),
@@ -98,7 +104,7 @@ function CountryProfilePage() {
         <main className="page-wrap py-16">
           <h1 className="font-display text-3xl font-bold">Country profile unavailable</h1>
           <p className="mt-3 text-muted-foreground">
-            This country may be inactive or not yet available in this browser.
+            This country may be inactive or not available in the backend catalogue.
           </p>
         </main>
       </PublicLayout>
@@ -148,7 +154,7 @@ function CountryProfilePage() {
                 </h2>
               </div>
               <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
-                Sample values
+                Published observations
               </span>
             </div>
             {indicatorSummaries.length ? (
@@ -232,9 +238,8 @@ function CountryProfilePage() {
             <div className="rounded-xl bg-wash p-5">
               <p className="text-xs font-bold uppercase tracking-wider text-primary">Data note</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Initial examples are synthetic teaching values, while administrators may add other
-                observations and source references. Check each observation's source and year;
-                imported information is not independently verified by this prototype.
+                Only observations published through backend datasets are shown here. If no value is
+                available, it remains unavailable rather than being shown as zero.
               </p>
             </div>
           </aside>

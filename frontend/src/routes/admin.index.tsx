@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AdminDashboard } from "@/components/admin-pages";
+import { ApiAdminDashboard as AdminDashboard } from "@/components/api-catalogue-admin";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({ meta: [{ title: "Admin Overview | Global Health Explorer" }] }),

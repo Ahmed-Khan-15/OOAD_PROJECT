@@ -21,6 +21,7 @@ import {
   getIndicator,
   healthRecords,
   recordsFor,
+  syntheticHealthRecords,
   type Topic,
 } from "@/data/health";
 
@@ -50,8 +51,17 @@ export function InteractiveExplorer({
   const [fromYear, setFromYear] = useState(2000);
   const [toYear, setToYear] = useState(2023);
   const [chartKind, setChartKind] = useState<ChartKind>("line");
+  const [showSynthetic, setShowSynthetic] = useState(false);
   const selected = getIndicator(topic, indicatorId);
-  const records = recordsFor(indicatorId, countryIds, fromYear, toYear);
+  const records = showSynthetic
+    ? syntheticHealthRecords.filter(
+        (record) =>
+          record.indicatorId === indicatorId &&
+          countryIds.includes(record.countryId) &&
+          record.year >= fromYear &&
+          record.year <= toYear,
+      )
+    : recordsFor(indicatorId, countryIds, fromYear, toYear);
   const years = [...new Set(records.map((record) => record.year))].sort((a, b) => a - b);
   const trendData = years.map((year) => {
     const row: Record<string, string | number | undefined> = { year: String(year) };
@@ -70,11 +80,8 @@ export function InteractiveExplorer({
   }));
   const yearsOptions = Array.from(
     new Set([
-      2000,
-      2008,
-      2016,
-      2023,
-      ...healthRecords
+      ...(showSynthetic ? [2000, 2008, 2016, 2023] : []),
+      ...(showSynthetic ? syntheticHealthRecords : healthRecords)
         .filter((record) => record.indicatorId === indicatorId)
         .map((record) => record.year),
     ]),
@@ -83,12 +90,8 @@ export function InteractiveExplorer({
   const isDataAvailable = records.length > 0;
   const currentYear = records.filter((record) => record.year === toYear);
   const unitsLabel = selected?.unit ?? "";
-  const isSyntheticOnly =
-    records.length > 0 &&
-    records.every((record) => record.source.includes("Synthetic teaching example"));
-  const hasAdminManagedData = records.some(
-    (record) => !record.source.includes("Synthetic teaching example"),
-  );
+  const isSyntheticOnly = showSynthetic && records.length > 0;
+  const hasAdminManagedData = !showSynthetic && records.length > 0;
 
   function toggleCountry(id: string) {
     setCountryIds((current) =>
@@ -107,14 +110,27 @@ export function InteractiveExplorer({
     >
       <div className="flex flex-col gap-2 border-b border-border px-5 py-5 sm:px-7 sm:py-6">
         <p className="text-xs font-bold uppercase tracking-wider text-primary">
-          Explore the sample data
+          Explore health observations
         </p>
         <h2 className="font-display text-2xl font-bold">Look closer</h2>
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-          Choose a measure and countries to see how a chart changes. Initial teaching values are
-          synthetic; administrator-added values show their source references but are not
-          independently verified by this prototype.
+          Published observations come from backend datasets. Teaching examples remain separate and
+          appear only when explicitly enabled.
         </p>
+        <label className="mt-2 flex items-start gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={showSynthetic}
+            onChange={(event) => setShowSynthetic(event.target.checked)}
+            className="mt-1 accent-primary"
+          />
+          <span>
+            Show synthetic teaching examples{" "}
+            <span className="block text-xs font-normal text-muted-foreground">
+              Illustrative only; not verified health measurements.
+            </span>
+          </span>
+        </label>
       </div>
       <div className="grid gap-5 border-b border-border px-5 py-5 sm:px-7 lg:grid-cols-[1fr_1fr]">
         <label className="grid gap-2 text-sm font-semibold">
@@ -426,9 +442,11 @@ export function InteractiveExplorer({
               Data note
             </p>
             <p className="mt-2 text-sm leading-6 text-foreground">
-              {hasAdminManagedData
-                ? "Administrator-added rows may include source references. Check the source and year; the prototype does not independently verify their accuracy."
-                : "Synthetic examples demonstrate comparisons only. They are not real measurements and have no public-health source."}
+              {isSyntheticOnly
+                ? "Synthetic examples demonstrate comparisons only. They are not real measurements and have no public-health source."
+                : hasAdminManagedData
+                  ? "Check the published dataset citation, unit, dimensions, and reference year before interpreting these observations."
+                  : "No published observations are available. Missing values are not interpreted as zero."}
             </p>
           </div>
           {isDataAvailable && (

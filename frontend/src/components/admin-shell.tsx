@@ -11,10 +11,14 @@ import {
   LogOut,
   Menu,
   Database,
+  FileText,
+  BookMarked,
+  HeartHandshake,
+  Files,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { isAdminSignedIn, signOutAdmin } from "@/data/admin-auth";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 
 const navigation = [
@@ -24,7 +28,11 @@ const navigation = [
   { to: "/admin/indicators", label: "Indicators", icon: Activity },
   { to: "/admin/records", label: "Health records", icon: BarChart3 },
   { to: "/admin/sources", label: "Data sources", icon: Database },
+  { to: "/admin/datasets", label: "Datasets", icon: Files },
   { to: "/admin/import", label: "CSV import", icon: FileUp },
+  { to: "/admin/articles", label: "Articles", icon: FileText },
+  { to: "/admin/glossary", label: "Glossary", icon: BookMarked },
+  { to: "/admin/donations", label: "Donations", icon: HeartHandshake },
 ] as const;
 
 export function AdminLayout({
@@ -44,24 +52,46 @@ export function AdminLayout({
   const location = useLocation();
 
   useEffect(() => {
-    const signedIn = isAdminSignedIn();
-    setAuthorized(signedIn);
-    if (!signedIn) {
-      void navigate({ to: "/admin/login", replace: true });
-    }
+    let active = true;
+    const onSessionExpired = () => {
+      if (active) {
+        setAuthorized(false);
+        void navigate({ to: "/admin/login", replace: true });
+      }
+    };
+    window.addEventListener("ghe:session-expired", onSessionExpired);
+    setAuthorized(null);
+    api
+      .session()
+      .then(() => {
+        if (active) setAuthorized(true);
+      })
+      .catch(() => {
+        if (active) {
+          setAuthorized(false);
+          void navigate({ to: "/admin/login", replace: true });
+        }
+      });
+    return () => {
+      active = false;
+      window.removeEventListener("ghe:session-expired", onSessionExpired);
+    };
   }, [navigate, location.pathname]);
 
-  const logout = () => {
-    signOutAdmin();
-    setAuthorized(false);
-    void navigate({ to: "/admin/login", replace: true });
+  const logout = async () => {
+    try {
+      await api.logout();
+    } finally {
+      setAuthorized(false);
+      void navigate({ to: "/admin/login", replace: true });
+    }
   };
 
   if (authorized !== true) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-6">
         <p className="rounded-xl border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
-          Checking prototype administrator session…
+          Checking administrator session…
         </p>
       </main>
     );
@@ -136,7 +166,7 @@ export function AdminLayout({
             Sign out
           </Button>
           <p className="px-3 pb-1 pt-3 text-[10px] leading-4 text-muted-foreground">
-            Prototype only · changes stay in this browser
+            Changes are saved to the backend
           </p>
         </div>
       </aside>
@@ -174,7 +204,7 @@ export function AdminLayout({
           <p className="mb-6 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
           {children}
           <footer className="mt-10 border-t border-border py-5 text-xs text-muted-foreground">
-            Prototype administration · No changes are sent to a server.
+            Administrator actions are protected by the backend session.
           </footer>
         </main>
       </div>

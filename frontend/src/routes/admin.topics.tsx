@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AdminEntityPage } from "@/components/admin-pages";
+import { CatalogueAdminPage } from "@/components/api-catalogue-admin";
 
 export const Route = createFileRoute("/admin/topics")({
   head: () => ({ meta: [{ title: "Topics | Admin | Global Health Explorer" }] }),
-  component: () => <AdminEntityPage kind="topics" />,
+  component: () => <CatalogueAdminPage kind="topics" />,
 });

@@ -13,16 +13,27 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CompareRouteImport } from './routes/compare'
+import { Route as DonateRouteImport } from './routes/donate'
+import { Route as GlossaryRouteImport } from './routes/glossary'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminArticlesRouteImport } from './routes/admin.articles'
 import { Route as AdminCountriesRouteImport } from './routes/admin.countries'
+import { Route as AdminDatasetsRouteImport } from './routes/admin.datasets'
+import { Route as AdminDonationsRouteImport } from './routes/admin.donations'
+import { Route as AdminGlossaryRouteImport } from './routes/admin.glossary'
 import { Route as AdminImportRouteImport } from './routes/admin.import'
 import { Route as AdminIndicatorsRouteImport } from './routes/admin.indicators'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminRecordsRouteImport } from './routes/admin.records'
 import { Route as AdminSourcesRouteImport } from './routes/admin.sources'
 import { Route as AdminTopicsRouteImport } from './routes/admin.topics'
+import { Route as ArticlesIndexRouteImport } from './routes/articles.index'
+import { Route as ArticlesSlugRouteImport } from './routes/articles.$slug'
 import { Route as CountriesIndexRouteImport } from './routes/countries.index'
 import { Route as CountriesCountryIdRouteImport } from './routes/countries.$countryId'
+import { Route as DonationConfirmationReferenceRouteImport } from './routes/donation-confirmation.$reference'
 import { Route as TopicsIndexRouteImport } from './routes/topics.index'
 import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
 
@@ -46,14 +57,54 @@ const CompareRoute = CompareRouteImport.update({
   path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DonateRoute = DonateRouteImport.update({
+  id: '/donate',
+  path: '/donate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GlossaryRoute = GlossaryRouteImport.update({
+  id: '/glossary',
+  path: '/glossary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourcesRoute = SourcesRouteImport.update({
+  id: '/sources',
+  path: '/sources',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminArticlesRoute = AdminArticlesRouteImport.update({
+  id: '/articles',
+  path: '/articles',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCountriesRoute = AdminCountriesRouteImport.update({
   id: '/countries',
   path: '/countries',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDatasetsRoute = AdminDatasetsRouteImport.update({
+  id: '/datasets',
+  path: '/datasets',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDonationsRoute = AdminDonationsRouteImport.update({
+  id: '/donations',
+  path: '/donations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGlossaryRoute = AdminGlossaryRouteImport.update({
+  id: '/glossary',
+  path: '/glossary',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminImportRoute = AdminImportRouteImport.update({
@@ -86,6 +137,16 @@ const AdminTopicsRoute = AdminTopicsRouteImport.update({
   path: '/topics',
   getParentRoute: () => AdminRoute,
 } as any)
+const ArticlesIndexRoute = ArticlesIndexRouteImport.update({
+  id: '/articles/',
+  path: '/articles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArticlesSlugRoute = ArticlesSlugRouteImport.update({
+  id: '/articles/$slug',
+  path: '/articles/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CountriesIndexRoute = CountriesIndexRouteImport.update({
   id: '/countries/',
   path: '/countries/',
@@ -96,6 +157,12 @@ const CountriesCountryIdRoute = CountriesCountryIdRouteImport.update({
   path: '/countries/$countryId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DonationConfirmationReferenceRoute =
+  DonationConfirmationReferenceRouteImport.update({
+    id: '/donation-confirmation/$reference',
+    path: '/donation-confirmation/$reference',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const TopicsIndexRoute = TopicsIndexRouteImport.update({
   id: '/topics/',
   path: '/topics/',
@@ -112,16 +179,27 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
   '/compare': typeof CompareRoute
+  '/donate': typeof DonateRoute
+  '/glossary': typeof GlossaryRoute
+  '/search': typeof SearchRoute
+  '/sources': typeof SourcesRoute
+  '/admin/articles': typeof AdminArticlesRoute
   '/admin/countries': typeof AdminCountriesRoute
+  '/admin/datasets': typeof AdminDatasetsRoute
+  '/admin/donations': typeof AdminDonationsRoute
+  '/admin/glossary': typeof AdminGlossaryRoute
   '/admin/import': typeof AdminImportRoute
   '/admin/indicators': typeof AdminIndicatorsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/records': typeof AdminRecordsRoute
   '/admin/sources': typeof AdminSourcesRoute
   '/admin/topics': typeof AdminTopicsRoute
+  '/articles/$slug': typeof ArticlesSlugRoute
   '/countries/$countryId': typeof CountriesCountryIdRoute
+  '/donation-confirmation/$reference': typeof DonationConfirmationReferenceRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/articles/': typeof ArticlesIndexRoute
   '/countries/': typeof CountriesIndexRoute
   '/topics/': typeof TopicsIndexRoute
 }
@@ -129,16 +207,27 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/compare': typeof CompareRoute
+  '/donate': typeof DonateRoute
+  '/glossary': typeof GlossaryRoute
+  '/search': typeof SearchRoute
+  '/sources': typeof SourcesRoute
+  '/admin/articles': typeof AdminArticlesRoute
   '/admin/countries': typeof AdminCountriesRoute
+  '/admin/datasets': typeof AdminDatasetsRoute
+  '/admin/donations': typeof AdminDonationsRoute
+  '/admin/glossary': typeof AdminGlossaryRoute
   '/admin/import': typeof AdminImportRoute
   '/admin/indicators': typeof AdminIndicatorsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/records': typeof AdminRecordsRoute
   '/admin/sources': typeof AdminSourcesRoute
   '/admin/topics': typeof AdminTopicsRoute
+  '/articles/$slug': typeof ArticlesSlugRoute
   '/countries/$countryId': typeof CountriesCountryIdRoute
+  '/donation-confirmation/$reference': typeof DonationConfirmationReferenceRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/admin': typeof AdminIndexRoute
+  '/articles': typeof ArticlesIndexRoute
   '/countries': typeof CountriesIndexRoute
   '/topics': typeof TopicsIndexRoute
 }
@@ -148,16 +237,27 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
   '/compare': typeof CompareRoute
+  '/donate': typeof DonateRoute
+  '/glossary': typeof GlossaryRoute
+  '/search': typeof SearchRoute
+  '/sources': typeof SourcesRoute
+  '/admin/articles': typeof AdminArticlesRoute
   '/admin/countries': typeof AdminCountriesRoute
+  '/admin/datasets': typeof AdminDatasetsRoute
+  '/admin/donations': typeof AdminDonationsRoute
+  '/admin/glossary': typeof AdminGlossaryRoute
   '/admin/import': typeof AdminImportRoute
   '/admin/indicators': typeof AdminIndicatorsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/records': typeof AdminRecordsRoute
   '/admin/sources': typeof AdminSourcesRoute
   '/admin/topics': typeof AdminTopicsRoute
+  '/articles/$slug': typeof ArticlesSlugRoute
   '/countries/$countryId': typeof CountriesCountryIdRoute
+  '/donation-confirmation/$reference': typeof DonationConfirmationReferenceRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/articles/': typeof ArticlesIndexRoute
   '/countries/': typeof CountriesIndexRoute
   '/topics/': typeof TopicsIndexRoute
 }
@@ -168,16 +268,27 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/compare'
+    | '/donate'
+    | '/glossary'
+    | '/search'
+    | '/sources'
+    | '/admin/articles'
     | '/admin/countries'
+    | '/admin/datasets'
+    | '/admin/donations'
+    | '/admin/glossary'
     | '/admin/import'
     | '/admin/indicators'
     | '/admin/login'
     | '/admin/records'
     | '/admin/sources'
     | '/admin/topics'
+    | '/articles/$slug'
     | '/countries/$countryId'
+    | '/donation-confirmation/$reference'
     | '/topics/$slug'
     | '/admin/'
+    | '/articles/'
     | '/countries/'
     | '/topics/'
   fileRoutesByTo: FileRoutesByTo
@@ -185,16 +296,27 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/compare'
+    | '/donate'
+    | '/glossary'
+    | '/search'
+    | '/sources'
+    | '/admin/articles'
     | '/admin/countries'
+    | '/admin/datasets'
+    | '/admin/donations'
+    | '/admin/glossary'
     | '/admin/import'
     | '/admin/indicators'
     | '/admin/login'
     | '/admin/records'
     | '/admin/sources'
     | '/admin/topics'
+    | '/articles/$slug'
     | '/countries/$countryId'
+    | '/donation-confirmation/$reference'
     | '/topics/$slug'
     | '/admin'
+    | '/articles'
     | '/countries'
     | '/topics'
   id:
@@ -203,16 +325,27 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/compare'
+    | '/donate'
+    | '/glossary'
+    | '/search'
+    | '/sources'
+    | '/admin/articles'
     | '/admin/countries'
+    | '/admin/datasets'
+    | '/admin/donations'
+    | '/admin/glossary'
     | '/admin/import'
     | '/admin/indicators'
     | '/admin/login'
     | '/admin/records'
     | '/admin/sources'
     | '/admin/topics'
+    | '/articles/$slug'
     | '/countries/$countryId'
+    | '/donation-confirmation/$reference'
     | '/topics/$slug'
     | '/admin/'
+    | '/articles/'
     | '/countries/'
     | '/topics/'
   fileRoutesById: FileRoutesById
@@ -222,8 +355,15 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
   CompareRoute: typeof CompareRoute
+  DonateRoute: typeof DonateRoute
+  GlossaryRoute: typeof GlossaryRoute
+  SearchRoute: typeof SearchRoute
+  SourcesRoute: typeof SourcesRoute
+  ArticlesSlugRoute: typeof ArticlesSlugRoute
   CountriesCountryIdRoute: typeof CountriesCountryIdRoute
+  DonationConfirmationReferenceRoute: typeof DonationConfirmationReferenceRoute
   TopicsSlugRoute: typeof TopicsSlugRoute
+  ArticlesIndexRoute: typeof ArticlesIndexRoute
   CountriesIndexRoute: typeof CountriesIndexRoute
   TopicsIndexRoute: typeof TopicsIndexRoute
 }
@@ -258,6 +398,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/donate': {
+      id: '/donate'
+      path: '/donate'
+      fullPath: '/donate'
+      preLoaderRoute: typeof DonateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/glossary': {
+      id: '/glossary'
+      path: '/glossary'
+      fullPath: '/glossary'
+      preLoaderRoute: typeof GlossaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sources': {
+      id: '/sources'
+      path: '/sources'
+      fullPath: '/sources'
+      preLoaderRoute: typeof SourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -265,11 +433,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/articles': {
+      id: '/admin/articles'
+      path: '/articles'
+      fullPath: '/admin/articles'
+      preLoaderRoute: typeof AdminArticlesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/countries': {
       id: '/admin/countries'
       path: '/countries'
       fullPath: '/admin/countries'
       preLoaderRoute: typeof AdminCountriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/datasets': {
+      id: '/admin/datasets'
+      path: '/datasets'
+      fullPath: '/admin/datasets'
+      preLoaderRoute: typeof AdminDatasetsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/donations': {
+      id: '/admin/donations'
+      path: '/donations'
+      fullPath: '/admin/donations'
+      preLoaderRoute: typeof AdminDonationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/glossary': {
+      id: '/admin/glossary'
+      path: '/glossary'
+      fullPath: '/admin/glossary'
+      preLoaderRoute: typeof AdminGlossaryRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/import': {
@@ -314,6 +510,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTopicsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/articles/': {
+      id: '/articles/'
+      path: '/articles'
+      fullPath: '/articles/'
+      preLoaderRoute: typeof ArticlesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/articles/$slug': {
+      id: '/articles/$slug'
+      path: '/articles/$slug'
+      fullPath: '/articles/$slug'
+      preLoaderRoute: typeof ArticlesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/countries/': {
       id: '/countries/'
       path: '/countries'
@@ -326,6 +536,13 @@ declare module '@tanstack/react-router' {
       path: '/countries/$countryId'
       fullPath: '/countries/$countryId'
       preLoaderRoute: typeof CountriesCountryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/donation-confirmation/$reference': {
+      id: '/donation-confirmation/$reference'
+      path: '/donation-confirmation/$reference'
+      fullPath: '/donation-confirmation/$reference'
+      preLoaderRoute: typeof DonationConfirmationReferenceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/topics/': {
@@ -346,7 +563,11 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminArticlesRoute: typeof AdminArticlesRoute
   AdminCountriesRoute: typeof AdminCountriesRoute
+  AdminDatasetsRoute: typeof AdminDatasetsRoute
+  AdminDonationsRoute: typeof AdminDonationsRoute
+  AdminGlossaryRoute: typeof AdminGlossaryRoute
   AdminImportRoute: typeof AdminImportRoute
   AdminIndicatorsRoute: typeof AdminIndicatorsRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -357,7 +578,11 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminArticlesRoute: AdminArticlesRoute,
   AdminCountriesRoute: AdminCountriesRoute,
+  AdminDatasetsRoute: AdminDatasetsRoute,
+  AdminDonationsRoute: AdminDonationsRoute,
+  AdminGlossaryRoute: AdminGlossaryRoute,
   AdminImportRoute: AdminImportRoute,
   AdminIndicatorsRoute: AdminIndicatorsRoute,
   AdminLoginRoute: AdminLoginRoute,
@@ -374,8 +599,15 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
   CompareRoute: CompareRoute,
+  DonateRoute: DonateRoute,
+  GlossaryRoute: GlossaryRoute,
+  SearchRoute: SearchRoute,
+  SourcesRoute: SourcesRoute,
+  ArticlesSlugRoute: ArticlesSlugRoute,
   CountriesCountryIdRoute: CountriesCountryIdRoute,
+  DonationConfirmationReferenceRoute: DonationConfirmationReferenceRoute,
   TopicsSlugRoute: TopicsSlugRoute,
+  ArticlesIndexRoute: ArticlesIndexRoute,
   CountriesIndexRoute: CountriesIndexRoute,
   TopicsIndexRoute: TopicsIndexRoute,
 }
