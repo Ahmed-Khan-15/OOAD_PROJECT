@@ -1,0 +1,25 @@
+Run each part in a separate PowerShell window. Start PostgreSQL first and make sure the local database `global_health_explorer` is running.
+
+**Backend**
+
+```powershell
+cd "C:\uni stuff\ooad\ooad project\backend"
+$env:DB_PASSWORD = Read-Host "PostgreSQL password"
+$env:SESSION_COOKIE_SECURE = "false"
+.\mvnw.cmd spring-boot:run
+```
+
+The backend runs at `http://localhost:8081`. Leave that window open.
+
+**Frontend**
+
+Open a second PowerShell window:
+
+```powershell
+cd "C:\uni stuff\ooad\ooad project\frontend"
+npm run dev
+```
+
+Open the URL Vite prints—usually `http://localhost:8080`.
+
+The password is only set in that PowerShell window. Don’t put it in a project file or share it. If your PostgreSQL account has no password, press Enter at the prompt.
