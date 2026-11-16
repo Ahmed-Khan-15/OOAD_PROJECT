@@ -1,0 +1,5 @@
+.maven-home
+target
+.env
+.env.*
+*.log
